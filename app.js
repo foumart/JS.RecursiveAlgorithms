@@ -11,11 +11,11 @@ class App {
 		if (debug) this.debug.longest = debug.hasAttribute('longest');
 		if (debug) this.debug.visible = debug.hasAttribute('visible') || debug.hasAttribute('hidden') ? false : !debug.instant;
 
-		this.debug.innerHTML = '';
+		if (debug) this.debug.innerHTML = '';
 
-		document.addEventListener("DebugClick", this.onDebugClick);
+		if (debug) document.addEventListener("DebugClick", this.onDebugClick);
 
-		this.processHackerrankData(`1 5
+		/*this.processHackerrankData(`1 5
 4 1
 7 7
 %%%%%%%
@@ -26,12 +26,14 @@ class App {
 %-----%
 %%%%%%%`);
 this.processPath();
-return;
+return;*/
 
-		this.width = 35;
-		this.height = 35;
+		this.generateMaze(22, 22, 1);
+	}
 
-		
+	generateMaze(width, height, type) {
+		this.width = width;
+		this.height = height;
 
 		// initialize new empty map
 		this.map = [];
@@ -46,7 +48,7 @@ return;
 
 		// init maze generator
 		this.mazeGenerator = new MazeGenerator(this.width, this.height, {
-			type: 1,
+			type: type,
 			debug: this.debug,
 			entranceX: 1,
 			entranceY: this.height - 2,
@@ -102,15 +104,6 @@ return;
 	}
 
 	processPath() {
-		/*if (!this.debug || this.debug.instant) {
-			const nodeList = this.initializeNodeList(this.map);
-			const pathFinder = new PathFinder(this.debug);
-			const path = pathFinder.getPath(nodeList, this.posX, this.posY, this.exitX, this.exitY, () => {
-				if (this.debug) console.log('done');
-			});
-			//pathFinder.advanceNodes();
-			return;
-		}*/
 		const pathPromise = this.findPath(this.map, this.posX, this.posY, this.exitX, this.exitY);
 		pathPromise.then((path) => {
 			path.reverse().forEach(pathCell => {
@@ -118,7 +111,7 @@ return;
 			});
 			if (this.debug) this.highlight(this.posX, this.posY, 5);
 			if (this.debug) this.highlight(this.exitX, this.exitY, 4);
-			if (this.debug) console.log(path);
+			console.log(path);
 		});
 	}
 
@@ -146,8 +139,17 @@ return;
 	// sets a tile to a certain color
 	// colors 0: yellow, 1: green, 2: red, 3: blue, 4: orange, 5: green circle, 6: light blue
 	highlight(posX, posY, type) {
-		const frame = document.getElementById(`debug_${posX}x${posY}`);
-		frame.innerHTML = String.fromCodePoint(type == 1 ? 129001 : type == 2 ? 128997 : type == 3 ? 128998 : type == 4 ? 128999 : type == 5 ? 129002 : type == 6 ? 128994 : 129000);
+		//if (!hidden) {
+			const frame = document.getElementById(`debug_${posX}x${posY}`);
+			frame.innerHTML = String.fromCodePoint(
+				type == 1 ? 129001 :
+				type == 2 ? 128997 :
+				type == 3 ? 128998 :
+				type == 4 ? 128999 :
+				type == 5 ? 129002 :
+				type == 6 ? 128994 : 129000
+			);
+		//}
 	}
 
 	/**
@@ -162,17 +164,19 @@ return;
 		const nodeList = this.initializeNodeList(map, true);
 
 		const getPathPromise = new Promise((resolve, reject) => {
-			/*const pathFinder = new PathFinder(this.debug);
-			const path = pathFinder.getPath(nodeList, posX, posY, exitX, exitY, resolve);
+			
+			const pathFinder = new PathFinder(this.debug);
+			pathFinder.getPath(nodeList, posX, posY, exitX, exitY, resolve);
 			if (this.debug && !this.debug.instant) {
 				document.addEventListener("keypress", pathFinder.advanceNodes.bind(pathFinder, resolve));
-			}*/
-			width = this.width;
+			}
+
+			/*width = this.width;
 			height = this.height;
 			getPath(nodeList, posX, posY, exitX, exitY, resolve, this.debug);
 			if (this.debug && !this.debug.instant) {
 				document.addEventListener("keypress", advanceNodes.bind(this, resolve));
-			}
+			}*/
 		});
 
 		return getPathPromise;
