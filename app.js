@@ -1,21 +1,5 @@
 window.addEventListener('load', () => {
-	const app = new App();
-});
-
-class App {
-	constructor() {
-		const debug = document.getElementById("debug");
-		this.debug = debug;
-		if (debug) this.debug.highlight = this.highlight;
-		if (debug) this.debug.instant = debug.hasAttribute('instant');
-		if (debug) this.debug.longest = debug.hasAttribute('longest');
-		if (debug) this.debug.visible = debug.hasAttribute('visible') || debug.hasAttribute('hidden') ? false : !debug.instant;
-
-		if (debug) this.debug.innerHTML = '';
-
-		if (debug) document.addEventListener("DebugClick", this.onDebugClick);
-
-		/*this.processHackerrankData(`1 5
+	const app = new App(`1 5
 4 1
 7 7
 %%%%%%%
@@ -25,10 +9,29 @@ class App {
 %-----%
 %-----%
 %%%%%%%`);
-this.processPath();
-return;*/
+});
 
-		this.generateMaze(22, 22, 1);
+class App {
+	constructor(data) {
+		const debug = document.getElementById("debug");
+		this.debug = debug;
+		if (debug) this.debug.highlight = this.highlight;
+		if (debug) this.debug.instant = debug.hasAttribute('instant') || debug.hasAttribute('hidden');
+		if (debug) this.debug.visible = debug.hasAttribute('visible') || debug.hasAttribute('hidden') ? false : !debug.instant;
+
+		if (debug) this.debug.innerHTML = '';
+
+		if (debug) document.addEventListener("DebugClick", this.onDebugClick);
+
+		if (data) {
+			this.processHackerrankData(data);
+			this.processPath();
+		} else {
+			this.width = 23;
+			this.height = 23;
+			this.type = 1;
+			this.generateMaze(this.width, this.height, this.type);
+		}
 	}
 
 	generateMaze(width, height, type) {
@@ -51,10 +54,10 @@ return;*/
 			type: type,
 			debug: this.debug,
 			entranceX: 1,
-			entranceY: this.height - 2,
-			exitX: this.width - 2,
+			entranceY: this.height - (this.height % 2 ? 2 : 1),
+			exitX: this.width - (this.width % 2 ? 2 : 1),
 			exitY: 1,
-			maxBranchLength: 20,
+			maxBranchLength: Math.ceil((this.width + this.height) / 4),
 			emptyRooms: 0
 		}, this.mazeGenerated.bind(this));
 	}
@@ -63,11 +66,11 @@ return;*/
 		this.mazeGenerator.destroy();
 		this.debug.innerHTML = '';
 		let maze = `${this.mazeGenerator.entranceY} ${this.mazeGenerator.entranceX}\n${this.mazeGenerator.exitY} ${this.mazeGenerator.exitX}\n${this.height} ${this.width}\n`;
-		this.mazeGenerator.maze.forEach(mazeRow => {
+		this.mazeGenerator.maze.forEach((mazeRow, index) => {
 			mazeRow.forEach(mazeCell => {
 				maze += mazeCell == 1 ? '%' : '-';
 			});
-			maze += '\n';
+			if (index < this.height - 1) maze += '\n';
 		});
 
 		this.processHackerrankData(maze);
@@ -119,37 +122,36 @@ return;*/
 	onDebugClick(event) {
 		let x = event.detail.x;
 		let y = event.detail.y;
-		console.log(x, y);
 		if (this.openList) {
 			this.openList.forEach(entry => {
 				if (entry.X == x && entry.Y == y) {
-					console.log('openList', entry);
+					console.log(`openList (${x}x${y})`, entry);
 				}
 			});
 		}
 		if (this.closedList) {
 			this.closedList.forEach(entry => {
 				if (entry.X == x && entry.Y == y) {
-					console.log('closedList', entry);
+					console.log(`closedList (${x}x${y})`, entry);
 				}
 			});
 		}
 	}
 
 	// sets a tile to a certain color
-	// colors 0: yellow, 1: green, 2: red, 3: blue, 4: orange, 5: green circle, 6: light blue
+	// colors -1: black, 0: yellow, 1: green, 2: red, 3: blue, 4: orange, 5: green circle, 6: light blue
 	highlight(posX, posY, type) {
-		//if (!hidden) {
-			const frame = document.getElementById(`debug_${posX}x${posY}`);
-			frame.innerHTML = String.fromCodePoint(
-				type == 1 ? 129001 :
-				type == 2 ? 128997 :
-				type == 3 ? 128998 :
-				type == 4 ? 128999 :
-				type == 5 ? 129002 :
-				type == 6 ? 128994 : 129000
-			);
-		//}
+		const frame = document.getElementById(`debug_${posX}x${posY}`);
+		frame.style.opacity = 1;
+		frame.innerHTML = String.fromCodePoint(
+			type == -1 ? 11035 :
+			type == 1 ? 129001 :
+			type == 2 ? 128997 :
+			type == 3 ? 128998 :
+			type == 4 ? 128999 :
+			type == 5 ? 129002 :
+			type == 6 ? 128994 : 129000
+		);
 	}
 
 	/**
@@ -170,13 +172,6 @@ return;*/
 			if (this.debug && !this.debug.instant) {
 				document.addEventListener("keypress", pathFinder.advanceNodes.bind(pathFinder, resolve));
 			}
-
-			/*width = this.width;
-			height = this.height;
-			getPath(nodeList, posX, posY, exitX, exitY, resolve, this.debug);
-			if (this.debug && !this.debug.instant) {
-				document.addEventListener("keypress", advanceNodes.bind(this, resolve));
-			}*/
 		});
 
 		return getPathPromise;
@@ -187,18 +182,28 @@ return;*/
 		
 		for(let y = 0; y < map.length; y++) {
 			let tmpArr = [];
-			let debugHtml = '';
-			for(let x = 0; x < map[y].length; x++) {
+			for(let x = 0; x < (map[0].length % 2 ? map[0].length : map[0].length + 1); x++) {
 				tmpArr.push(map[y][x]);
-				if (this.debug && !this.debug.instant || debug) {
-					let char = !map[y][x] ? String.fromCodePoint(11035) : String.fromCodePoint(11036);
-					let click = `onclick='document.dispatchEvent(new CustomEvent("DebugClick",{"detail":{"x":${x},"y":${y}}}))'`;
-					debugHtml += `<div ${x == map[y].length-1 ? '' : 'style="float:left"'} id="debug_${x}x${y}" ${click}>${char}</div>`;
-				}
 			}
 			nodeList.push(tmpArr);
-			if (this.debug) this.debug.innerHTML += debugHtml;
 		}
+
+		if (this.debug && !this.debug.instant || debug) {
+			let _height = (map.length % 2 ? map.length : map.length + 1);
+			let _width = (map[0].length % 2 ? map[0].length : map[0].length + 1);
+			for(let y = 0; y < _height; y++) {
+				let debugHtml = '';
+				for(let x = 0; x < _width; x++) {
+					let char = map.length % 2 == 0 || map[0].length % 2 == 0 || !map[y][x] ? String.fromCodePoint(11035) : String.fromCodePoint(11036);
+					let click = `onclick='document.dispatchEvent(new CustomEvent("DebugClick",{"detail":{"x":${x},"y":${y}}}))'`;
+					let transparent = debug && (x && x < _width-1 && y && y < _height-1);
+					debugHtml += `<div style="${x == _width-1 ? '' : 'float:left;'}${transparent?'opacity:0.5':''}" id="debug_${x}x${y}" ${click}>${char}</div>`;
+				}
+				this.debug.innerHTML += debugHtml;
+			}
+		}
+
+		this.debug.innerHTML += "press SPACE to advance";
 
 		return nodeList;
 	}

@@ -38,9 +38,13 @@ class PathFinder {
 
 	stepForward(_posX, _posY, _destX, _destY) {
 		if (_posY && this.nodesList[_posY - 1][_posX]) this.getNode(1, _posX, _posY, _destX, _destY);
+			else if (_posY && this.nodesList[_posY - 1][_posX] == 0) this.debug.highlight(_posX, _posY - 1, -1);
 		if (_posY && this.nodesList[_posY][_posX - 1]) this.getNode(2, _posX, _posY, _destX, _destY);
+			else if (_posY && this.nodesList[_posY][_posX - 1] == 0) this.debug.highlight(_posX - 1, _posY, -1);
 		if (_posX < this.width-1 && this.nodesList[_posY][_posX + 1]) this.getNode(3, _posX, _posY, _destX, _destY);
+			else if (_posX < this.width-1 && this.nodesList[_posY][_posX + 1] == 0) this.debug.highlight(_posX + 1, _posY, -1);
 		if (_posY < this.height-1 && this.nodesList[_posY + 1][_posX]) this.getNode(4, _posX, _posY, _destX, _destY);
+			else if (_posY < this.height-1 && this.nodesList[_posY + 1][_posX] == 0) this.debug.highlight(_posX, _posY + 1, -1);
 		if (this.debug) this.debug.highlight(_posX, _posY, _destX != _posX || _destY != _posY ? 0 : 2);
 
 		this.sortOpenList();
@@ -203,5 +207,4 @@ class PathFinder {
 		}
 		return check;
 	}
-
 }
