@@ -55,14 +55,14 @@ class IslandGenerator {
 		let attempt = 0;
 		while (
 			this.checkAjacentIslands(this.startX, this.startY) &&
-			attempt < 9999
+			attempt < 9
 		) {
 			this.startY = this.rand(this.offset+(4-this.id/5-attempt/3)|0, this.height-(this.offset+(4-this.id/5-attempt/3)|0));
 			this.startX = this.rand(this.offset+(4-this.id/5-attempt/3)|0, this.width-(this.offset+(4-this.id/5-attempt/3)|0));
 			attempt ++;
-			/*if (attempt == 8) {
-				if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 4);
-			}*/
+			if (attempt == 8) {
+				//if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 4);
+			}
 		}
 
 		// add riffs and relief data
@@ -78,12 +78,13 @@ class IslandGenerator {
 		this.randomizeNextIsland();
 	}
 
-	updateRelief(posX, posY, type = 1, inner = 0) {
+	updateRelief(posX, posY, type = 1, inner = -1) {
 		// map level topology
 		if (posX < 1 || posX > this.width-1 || posY < 1 || posY > this.height-1) return;
-		this.relief[posY][posX] += type == 1 && !this.relief[posY][posX] ? 2 : 1;
-		if (this.debug.visible) {
-			this.debug.highlight(posX, posY, type).children[1].innerHTML = inner || this.relief[posY][posX];
+		if (inner) this.relief[posY][posX] ++;//+= type == 1 && !this.relief[posY][posX] ? 2 : 1;
+		if (this.debug && this.debug.visible) {
+			type = this.debug.highlight(posX, posY, type);
+			type.children[1].innerHTML = inner > 0 ? inner : this.relief[posY][posX];
 		}
 	}
 
@@ -125,30 +126,26 @@ class IslandGenerator {
 
 		const abs = Math.abs;
 
-		const generateDirections = () => {
-			const directions = [];
-			for (let dy = -3; dy <= 3; dy++) {
-				for (let dx = -3; dx <= 3; dx++) {
-					if (
-						(abs(dy) <= 1 && abs(dx) <= 1) || 
-						(abs(dy) === abs(dx)) || 
-						dy === 0 || 
-						dx === 0 || 
-						(abs(dy) === 3 && abs(dx) === 1) || 
-						(abs(dy) === 1 && abs(dx) === 3)
-					) {
-						directions.push([dy, dx]);
-					}
+		let directions = [];
+		for (let dy = -3; dy <= 3; dy++) {
+			for (let dx = -3; dx <= 3; dx++) {
+				if (
+					(abs(dy) <= 1 && abs(dx) <= 1) || 
+					(abs(dy) === abs(dx) && abs(dy) < 3) || 
+					dy === 0 || 
+					dx === 0 || 
+					(abs(dy) === 3 && abs(dx) === 1) || 
+					(abs(dy) === 1 && abs(dx) === 3)
+				) {
+					directions.push([dy, dx]);
 				}
 			}
-			return directions;
-		};
-		
-		const directions = generateDirections();
+		}
 		
 		let check = directions.some(([dy, dx]) => {
 			const y = posY + dy;
 			const x = posX + dx;
+			if (!this.relief[posY + dy][posX + dx]) this.updateRelief(posX + dx,  posY + dy, 3, 0);// turn water tile opacity to 1
 			return (this.map[y] && this.map[y][x] && this.map[y][x] != this.id) || (this.visited[y] && this.visited[y][x]);
 		}) || this.visited[posY][posX];
 
@@ -164,13 +161,13 @@ class IslandGenerator {
 		this.amounts = this.rand(3 + this.id/7, 5 + this.id/5);
 		this.posX = this.startX;
 		this.posY = this.startY;
-		console.log("new #"+this.id+" island will be at " + this.startX+"x"+this.startY, "depth:"+this.depth, "n:"+this.amounts)
+		if (this.debug) console.log("new #"+this.id+" island will be at " + this.startX+"x"+this.startY, "depth:"+this.depth, "n:"+this.amounts)
 	}
 
 	advanceRandomization() {
 		if (this.destroyed) return;
 
-		if (this.debug.visible) this.debug.highlight(this.posX, this.posY);// cursor highlight yellow
+		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY);// cursor highlight yellow
 
 		if (!this.debug || this.debug.instant) {
 			this.randomizedExpand();
@@ -186,7 +183,7 @@ class IslandGenerator {
 	}
 
 	randomizedExpand() {
-		if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 1);// previous highlight in green
+		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, 1);// previous highlight in green
 		let dirX = 0;
 		let dirY = 0;
 		let attempt = 0;
@@ -247,7 +244,7 @@ class IslandGenerator {
 			this.posX = this.startX;
 			this.posY = this.startY;
 		} else {
-			// update the green relief data on each island tile (land)
+			// increment and update the green relief data on each island tile we visit (land)
 			this.updateRelief(this.posX, this.posY, 1);
 		}
 

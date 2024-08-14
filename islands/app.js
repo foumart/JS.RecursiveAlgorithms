@@ -10,7 +10,9 @@ class App {
 		const debug =  this.debug != null;
 		if (debug) this.debug.highlight = this.highlight;
 		if (debug) this.debug.instant = this.debug.hasAttribute('instant');
-		if (debug) this.debug.visible = this.debug.hasAttribute('visible') ? false : !debug.instant;
+		if (debug) this.debug.visible = this.debug.hasAttribute('visible') ||
+			(!this.debug.style.visibility || this.debug.style.visibility == "visible") ||
+			(!this.debug.style.display || this.debug.style.display == "block");
 
 		if (debug) this.debug.innerHTML = '';
 
@@ -23,10 +25,15 @@ class App {
 	}
 
 	generateNext() {
-		console.log("generate next map");
-		this.islandGenerator.destroy();
-		this.debug.innerHTML = '';
-		app = new App();
+		if (this.debug && this.debug.visible) {
+			console.log("generate next map");
+			this.islandGenerator.destroy();
+			this.debug.innerHTML = '';
+			app = new App();
+		} else {
+
+		}
+		
 	}
 
 	generateMap(width, height, type, debug) {
@@ -51,7 +58,7 @@ class App {
 			startX: this.width/2|0,
 			startY: this.height/2|0
 		}, this.mapGenerated);
-        window.island = this.islandGenerator;
+        //window.island = this.islandGenerator;
 	}
 
     mapGenerated() {
@@ -64,6 +71,7 @@ class App {
 		});
 
 		console.log(map);
+		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML = "press SPACE to generate new map";
 
 		if (!this.debug) {
 			this.main.generateNext();
@@ -72,9 +80,7 @@ class App {
 				document.addEventListener("keypress", this.advanceGeneration.bind(this, resolve));
 			});
 	
-			randomizePromise.then(() => {
-				this.main.generateNext();
-			});
+			randomizePromise.then(this.main.generateNext);
 		}
 	}
 
@@ -87,10 +93,10 @@ class App {
 
 	// sets a tile to a certain color
 	// colors -1: black, 0: yellow, 1: green, 2: red, 3: blue, 4: orange
-	highlight(posX, posY, type) {
+	highlight(posX, posY, type = 0) {
 		const frame = document.getElementById(`debug_${posX}x${posY}`);
 		frame.style.opacity = 1;
-		frame.firstChild.innerHTML = String.fromCodePoint(
+		if (type > -1) frame.firstChild.innerHTML = String.fromCodePoint(
 			type == 0 ? 129000 : // 🟨 yellow
 			type == 1 ? 129001 : // 🟩 green
 			type == 2 ? 128997 : // 🟥 red
@@ -106,8 +112,7 @@ class App {
 			type == 12 ? 11036 : // white square
 			type == 13 ? 11035 : // black square
 			type == 14 ? 128306 : // black thick bordered white square
-			type == 15 ? 128307 : // white thick bordered black square
-			129000 // yellow
+			128307 // white thick bordered black square
 		);
 		return frame;
 	}
@@ -132,13 +137,13 @@ class App {
 					let char = String.fromCodePoint(128998);
 					let click = `onclick='document.dispatchEvent(new CustomEvent("DebugClick",{"detail":{"x":${x},"y":${y}}}))'`;
 					let transparent = true;
-					debugHtml += `<div style="${x == _width-1 ? '' : 'float:left;'}${transparent?'opacity:0.5':''}" id="debug_${x}x${y}" ${click}><div>${char}</div><div style="position:absolute;margin-top:-19px;margin-left:6px"></div></div>`;
+					debugHtml += `<div style="${x == _width-1 ? '' : 'float:left;'}${transparent?'opacity:0.6':''}" id="debug_${x}x${y}" ${click}><div>${char}</div><div style="position:absolute;margin-top:-19px;margin-left:6px"></div></div>`;
 				}
 				this.debug.innerHTML += debugHtml;
 			}
 		}
 
-		this.debug.innerHTML += "press SPACE to advance";
+		if (this.debug && this.debug) this.debug.innerHTML += "<span>press SPACE to advance</span>";
 
 		return nodeList;
 	}
