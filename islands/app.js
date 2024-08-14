@@ -17,8 +17,8 @@ class App {
 		if (data) {
             this.completed(data);
 		} else {
-			this.width = 30;
-			this.height = 30;
+			this.width = 32;
+			this.height = 32;
 			this.type = 1;
 			this.generateMap(this.width, this.height, this.type);
 		}
@@ -79,17 +79,18 @@ class App {
 	highlight(posX, posY, type) {
 		const frame = document.getElementById(`debug_${posX}x${posY}`);
 		frame.style.opacity = 1;
-		frame.innerHTML = String.fromCodePoint(
+		frame.firstChild.innerHTML = String.fromCodePoint(
 			type == -1 ? 11035 : // black box
 			type == 1 ? 129001 : // green
 			type == 2 ? 128997 : // red
 			type == 3 ? 128998 : // blue
 			type == 4 ? 128999 : // orange
 			type == 5 ? 129002 : // violet
-			type == 6 ? 128994 : // green circle
-			type == 7 ? 129003 :
+			type == 6 ? 129003 : // brawn
+			type == 7 ? 128994 : // green circle
 			129000 // yellow
 		);
+		return frame;
 	}
 
 	initializeNodeList(map, debug) {
@@ -112,7 +113,7 @@ class App {
 					let char = String.fromCodePoint(128998);
 					let click = `onclick='document.dispatchEvent(new CustomEvent("DebugClick",{"detail":{"x":${x},"y":${y}}}))'`;
 					let transparent = debug && (x && x < _width-1 && y && y < _height-1);
-					debugHtml += `<div style="${x == _width-1 ? '' : 'float:left;'}${transparent?'opacity:0.5':''}" id="debug_${x}x${y}" ${click}>${char}</div>`;
+					debugHtml += `<div style="${x == _width-1 ? '' : 'float:left;'}${transparent?'opacity:0.5':''}" id="debug_${x}x${y}" ${click}><div>${char}</div><div style="position:absolute;margin-top:-19px;margin-left:6px"></div></div>`;
 				}
 				this.debug.innerHTML += debugHtml;
 			}

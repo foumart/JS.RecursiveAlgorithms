@@ -6,7 +6,7 @@ class IslandGenerator {
 		this.startY = details.startY;
 		this.resolve = resolve;
 		this.destroyed = false;
-		this.offset = 4;
+		this.offset = 3;
 
 		this.generateIslands(width, height);
 	}
@@ -25,6 +25,8 @@ class IslandGenerator {
 		this.posX = this.startX;
 		this.posY = this.startY;
 
+		this.relief = this.initArray();
+
 		this.visited = this.initArray();
 		this.visited.forEach((row, indexY) => {
 			row.forEach((cell, indexX) => {
@@ -40,9 +42,10 @@ class IslandGenerator {
 		//if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 5);
 		
 		this.islands.push([]);
-		this.id = 1;
+		this.id = 0;
 		this.choseNextStartLocation();
 		this.visited[this.posY][this.posX] = 1;
+		this.relief[this.posY][this.posX] = 1;
 		this.map[this.posY][this.posX] = 1;
 		this.advanceRandomization();
 	}
@@ -53,22 +56,25 @@ class IslandGenerator {
 			this.checkAjacentIslands(this.startX, this.startY) &&
 			attempt < 50
 		) {
-			this.startY = this.rand(this.offset, this.height-this.offset);
-			this.startX = this.rand(this.offset, this.width-this.offset);
+			this.startY = this.rand(this.offset*2, this.height-this.offset*2);
+			this.startX = this.rand(this.offset*2, this.width-this.offset*2);
 			attempt ++;
 			if (attempt == 49) {
 				if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 6);
 			}
 		}
 		// TODO: improve
-		if (this.debug.visible) this.debug.highlight(this.startX+2, this.startY+2, 5);
-		if (this.debug.visible) this.debug.highlight(this.startX+2, this.startY-2, 5);
-		if (this.debug.visible) this.debug.highlight(this.startX-2, this.startY+2, 5);
-		if (this.debug.visible) this.debug.highlight(this.startX-2, this.startY-2, 5);
-		if (this.debug.visible) this.debug.highlight(this.startX+3, this.startY, 5);
-		if (this.debug.visible) this.debug.highlight(this.startX-3, this.startY, 5);
-		if (this.debug.visible) this.debug.highlight(this.startX, this.startY+3, 5);
-		if (this.debug.visible) this.debug.highlight(this.startX, this.startY-3, 5);
+		if (this.debug.visible) this.debug.highlight(this.startX+2, this.startY+2, 5).children[1].innerHTML = 1;
+		if (this.debug.visible) this.debug.highlight(this.startX+2, this.startY-2, 5).children[1].innerHTML = 1;
+		if (this.debug.visible) this.debug.highlight(this.startX-2, this.startY+2, 5).children[1].innerHTML = 1;
+		if (this.debug.visible) this.debug.highlight(this.startX-2, this.startY-2, 5).children[1].innerHTML = 1;
+		if (this.debug.visible) this.debug.highlight(this.startX+3, this.startY, 5).children[1].innerHTML = 1;
+		if (this.debug.visible) this.debug.highlight(this.startX-3, this.startY, 5).children[1].innerHTML = 1;
+		if (this.debug.visible) this.debug.highlight(this.startX, this.startY+3, 5).children[1].innerHTML = 1;
+		if (this.debug.visible) this.debug.highlight(this.startX, this.startY-3, 5).children[1].innerHTML = 1;
+
+		if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 3).children[1].innerHTML =
+			this.relief[this.posY][this.posX];// hilight relief
 
 		this.randomizeNextIsland();
 	}
@@ -83,14 +89,18 @@ class IslandGenerator {
 			this.map[posY+1][posX] && this.map[posY+1][posX] != this.id ||
 			this.map[posY][posX-1] && this.map[posY][posX-1] != this.id ||
 			this.map[posY][posX+1] && this.map[posY][posX+1] != this.id ||
+			this.map[posY-2][posX] && this.map[posY-2][posX] != this.id ||
+			this.map[posY+2][posX] && this.map[posY+2][posX] != this.id ||
+			this.map[posY][posX-2] && this.map[posY][posX-2] != this.id ||
+			this.map[posY][posX+2] && this.map[posY][posX+2] != this.id ||
 			this.map[posY + 1][posX + 1] && this.map[posY + 1][posX + 1] != this.id ||
 			this.map[posY + 1][posX - 1] && this.map[posY + 1][posX - 1] != this.id ||
 			this.map[posY - 1][posX + 1] && this.map[posY - 1][posX + 1] != this.id ||
 			this.map[posY - 1][posX - 1] && this.map[posY - 1][posX - 1] != this.id ||
-			this.map[posY + 1][posX + 1] && this.map[posY + 1][posX + 1] != this.id ||
-			this.map[posY + 1][posX - 1] && this.map[posY + 1][posX - 1] != this.id ||
-			this.map[posY - 1][posX + 1] && this.map[posY - 1][posX + 1] != this.id ||
-			this.map[posY - 1][posX - 1] && this.map[posY - 1][posX - 1] != this.id ||
+			this.map[posY + 2][posX + 2] && this.map[posY + 2][posX + 2] != this.id ||
+			this.map[posY + 2][posX - 2] && this.map[posY + 2][posX - 2] != this.id ||
+			this.map[posY - 2][posX + 2] && this.map[posY - 2][posX + 2] != this.id ||
+			this.map[posY - 2][posX - 2] && this.map[posY - 2][posX - 2] != this.id ||
 			this.map[posY-3][posX] && this.map[posY-3][posX] != this.id ||
 			this.map[posY+3][posX] && this.map[posY+3][posX] != this.id ||
 			this.map[posY][posX-3] && this.map[posY][posX-3] != this.id ||
@@ -108,6 +118,7 @@ class IslandGenerator {
 	}
 
 	randomizeNextIsland() {
+		this.id ++;
 		this.i = 0;
 		this.n = 0;
 		this.islands.push([]);
@@ -121,7 +132,7 @@ class IslandGenerator {
 	advanceRandomization() {
 		if (this.destroyed) return;
 
-		if (this.debug.visible) this.debug.highlight(this.posX, this.posY);//green
+		if (this.debug.visible) this.debug.highlight(this.posX, this.posY);//yellow
 
 		if (!this.debug || this.debug.instant) {
 			this.randomizedExpand();
@@ -137,7 +148,7 @@ class IslandGenerator {
 	}
 
 	randomizedExpand() {
-		if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 1);
+		if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 1);//green
 		let dirX = 0;
 		let dirY = 0;
 		let attempt = 0;
@@ -169,8 +180,12 @@ class IslandGenerator {
 		
 		this.visited[this.posY][this.posX] = 1;
 		this.map[this.posY][this.posX] = this.id;// will have to determine tile type as well
+		this.relief[this.posY][this.posX] ++;// map level topology
 		this.islands[this.id].push([dirX, dirY, 1]);
 		//if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 5);// edge violet
+		if (this.debug.visible) this.debug.highlight(this.posX, this.posY, this.map[this.posY][this.posX] == this.id ? 1 : 5).children[1].innerHTML =
+			this.relief[this.posY][this.posX];// hilight relief
+
 		this.i += 1;
 		if (this.i >= this.depth) {
 			this.n ++;
@@ -178,8 +193,8 @@ class IslandGenerator {
 			if (this.n >= this.amounts) {
 				if (this.debug.visible) this.debug.highlight(this.startX, this.startY);
 				//if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 4);// edge orange
-				this.id ++;
-				if (this.id == 14) {
+				if (this.debug.visible) this.debug.highlight(this.startX, this.startY).children[1].innerHTML = this.id;
+				if (this.id == 13) {
 					console.log("done");
 					this.resolve();
 					return;
