@@ -1,34 +1,35 @@
+var app;
+
 window.addEventListener('load', () => {
-	const app = new App();
+	app = new App();
 });
 
 class App {
-	constructor(data) {
-		const debug = document.getElementById("debug");
-		this.debug = debug;
+	constructor() {
+		this.debug = document.getElementById("debug")
+		const debug =  this.debug != null;
 		if (debug) this.debug.highlight = this.highlight;
-		if (debug) this.debug.instant = debug.hasAttribute('instant') || debug.hasAttribute('hidden');
-		if (debug) this.debug.visible = debug.hasAttribute('visible') || debug.hasAttribute('hidden') ? false : !debug.instant;
+		if (debug) this.debug.instant = this.debug.hasAttribute('instant');
+		if (debug) this.debug.visible = this.debug.hasAttribute('visible') ? false : !debug.instant;
 
 		if (debug) this.debug.innerHTML = '';
 
 		if (debug) document.addEventListener("DebugClick", this.onDebugClick);
 
-		if (data) {
-            this.completed(data);
-		} else {
-			this.width = 32;
-			this.height = 32;
-			this.type = 1;
-			this.generateMap(this.width, this.height, this.type);
-		}
+		this.width = 32;
+		this.height = 32;
+		this.type = 1;
+		this.generateMap(this.width, this.height, this.type, debug);
 	}
 
-    completed(data) {
-        console.log(data);
-    }
+	generateNext() {
+		console.log("generate next map");
+		this.islandGenerator.destroy();
+		this.debug.innerHTML = '';
+		app = new App();
+	}
 
-	generateMap(width, height, type) {
+	generateMap(width, height, type, debug) {
 		this.width = width;
 		this.height = height;
 
@@ -41,30 +42,40 @@ class App {
 			}
 			this.map.push(tmp);
 		}
-		this.initializeNodeList(this.map);
+		this.initializeNodeList(this.map, debug);
 
 		// init map generator
-		this.islandGenerator = new IslandGenerator(this.width, this.height, {
+		this.islandGenerator = new IslandGenerator(this, this.width, this.height, {
 			type: type,
 			debug: this.debug,
 			startX: this.width/2|0,
 			startY: this.height/2|0
-		}, this.mapGenerated.bind(this));
+		}, this.mapGenerated);
         window.island = this.islandGenerator;
 	}
 
     mapGenerated() {
-		//this.islandGenerator.destroy();
-		//this.debug.innerHTML = '';
-		let map = `${this.islandGenerator.startY} ${this.islandGenerator.startX}\n${this.islandGenerator.posY} ${this.islandGenerator.posX}\n${this.height} ${this.width}\n`;
-		this.islandGenerator.map.forEach((mapRow, index) => {
+		let map = `${this.startY} ${this.startX}\n${this.posY} ${this.posX}\n${this.height} ${this.width}\n`;
+		this.map.forEach((mapRow, index) => {
 			mapRow.forEach(mapCell => {
 				map += mapCell.toString(16) + '';
 			});
 			if (index < this.height - 1) map += '\n';
 		});
 
-		this.completed(map);
+		console.log(map);
+
+		if (!this.debug) {
+			this.main.generateNext();
+		} else {
+			const randomizePromise = new Promise((resolve, reject) => {
+				document.addEventListener("keypress", this.advanceGeneration.bind(this, resolve));
+			});
+	
+			randomizePromise.then(() => {
+				this.main.generateNext();
+			});
+		}
 	}
 
 	// debug click functions
@@ -80,14 +91,22 @@ class App {
 		const frame = document.getElementById(`debug_${posX}x${posY}`);
 		frame.style.opacity = 1;
 		frame.firstChild.innerHTML = String.fromCodePoint(
-			type == -1 ? 11035 : // black box
-			type == 1 ? 129001 : // green
-			type == 2 ? 128997 : // red
-			type == 3 ? 128998 : // blue
-			type == 4 ? 128999 : // orange
-			type == 5 ? 129002 : // violet
-			type == 6 ? 129003 : // brawn
-			type == 7 ? 128994 : // green circle
+			type == 0 ? 129000 : // 🟨 yellow
+			type == 1 ? 129001 : // 🟩 green
+			type == 2 ? 128997 : // 🟥 red
+			type == 3 ? 128998 : // 🟦 blue
+			type == 4 ? 128999 : // 🟧 orange
+			type == 5 ? 129002 : // 🟪 violet
+			type == 6 ? 129003 : // 🟫 brawn
+			type == 7 ? 128994 : // 🟢 green circle
+			type == 8 ? 128996 : // 🟤 brown circle
+			type == 9 ? 128995 : // 🟣 violet circle
+			type == 10 ? 128993 : // 🟡 yellow circle
+			type == 11 ? 128992 : // 🟠 orange circle
+			type == 12 ? 11036 : // white square
+			type == 13 ? 11035 : // black square
+			type == 14 ? 128306 : // black thick bordered white square
+			type == 15 ? 128307 : // white thick bordered black square
 			129000 // yellow
 		);
 		return frame;
@@ -112,7 +131,7 @@ class App {
 				for(let x = 0; x < _width; x++) {
 					let char = String.fromCodePoint(128998);
 					let click = `onclick='document.dispatchEvent(new CustomEvent("DebugClick",{"detail":{"x":${x},"y":${y}}}))'`;
-					let transparent = debug && (x && x < _width-1 && y && y < _height-1);
+					let transparent = true;
 					debugHtml += `<div style="${x == _width-1 ? '' : 'float:left;'}${transparent?'opacity:0.5':''}" id="debug_${x}x${y}" ${click}><div>${char}</div><div style="position:absolute;margin-top:-19px;margin-left:6px"></div></div>`;
 				}
 				this.debug.innerHTML += debugHtml;
