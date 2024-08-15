@@ -8,6 +8,8 @@ class IslandGenerator {
 		this.resolve = resolve;
 		this.destroyed = false;
 		this.offset = 3;
+		this.startTime = performance.now();
+		this.map = [];
 
 		this.generateIslands(width, height);
 	}
@@ -41,13 +43,12 @@ class IslandGenerator {
 		this.islands = [];
 
 		//if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 5);
-		
-		this.islands.push([]);
 		this.id = 0;
 		this.updateRelief(this.posX, this.posY);
 		this.choseNextStartLocation();
 		this.visited[this.posY][this.posX] = 1;
 		this.map[this.posY][this.posX] = 1;
+		this.islands.push([]);
 		this.advanceRandomization();
 	}
 
@@ -55,12 +56,12 @@ class IslandGenerator {
 		let attempt = 0;
 		while (
 			this.checkAjacentIslands(this.startX, this.startY) &&
-			attempt < 9
+			attempt < 9999
 		) {
-			this.startY = this.rand(this.offset+(4-this.id/5-attempt/3)|0, this.height-(this.offset+(4-this.id/5-attempt/3)|0));
-			this.startX = this.rand(this.offset+(4-this.id/5-attempt/3)|0, this.width-(this.offset+(4-this.id/5-attempt/3)|0));
+			this.startY = this.rand(this.offset, this.height-this.offset);
+			this.startX = this.rand(this.offset, this.width-this.offset);
 			attempt ++;
-			if (attempt == 8) {
+			if (attempt == 9998) {
 				//if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 4);
 			}
 		}
@@ -81,10 +82,10 @@ class IslandGenerator {
 	updateRelief(posX, posY, type = 1, inner = -1) {
 		// map level topology
 		if (posX < 1 || posX > this.width-1 || posY < 1 || posY > this.height-1) return;
-		if (inner) this.relief[posY][posX] ++;//+= type == 1 && !this.relief[posY][posX] ? 2 : 1;
+		if (inner) this.relief[posY][posX] ++;
 		if (this.debug && this.debug.visible) {
 			type = this.debug.highlight(posX, posY, type);
-			type.children[1].innerHTML = inner > 0 ? inner : this.relief[posY][posX];
+			type.children[1].innerHTML = inner > 0 ? inner.toString(16).toUpperCase() : this.relief[posY][posX];
 		}
 	}
 
@@ -93,36 +94,6 @@ class IslandGenerator {
 			return false;
 		}
 		if (posX == this.startX && posY == this.startY && !this.i && !this.n) return false;
-		// TODO: check which one compresses better
-		/*let check = this.visited[posY][posX] ||// this.relief[posY][posX] ||
-			this.map[posY-1][posX] && this.map[posY-1][posX] != this.id || this.relief[posY-1][posX] ||
-			this.map[posY+1][posX] && this.map[posY+1][posX] != this.id || this.relief[posY+1][posX] ||
-			this.map[posY][posX-1] && this.map[posY][posX-1] != this.id || this.relief[posY][posX-1] ||
-			this.map[posY][posX+1] && this.map[posY][posX+1] != this.id || this.relief[posY][posX+1] ||
-			this.map[posY-2][posX] && this.map[posY-2][posX] != this.id || this.relief[posY-1][posX] ||
-			this.map[posY+2][posX] && this.map[posY+2][posX] != this.id || this.relief[posY-1][posX] ||
-			this.map[posY][posX-2] && this.map[posY][posX-2] != this.id || this.relief[posY][posX-2] ||
-			this.map[posY][posX+2] && this.map[posY][posX+2] != this.id || this.relief[posY][posX+2] ||
-			this.map[posY+1][posX+1] && this.map[posY+1][posX+1] != this.id || this.relief[posY+1][posX+1] ||
-			this.map[posY+1][posX-1] && this.map[posY+1][posX-1] != this.id || this.relief[posY+1][posX-1] ||
-			this.map[posY-1][posX+1] && this.map[posY-1][posX+1] != this.id || this.relief[posY-1][posX+1] ||
-			this.map[posY-1][posX-1] && this.map[posY-1][posX-1] != this.id || this.relief[posY-1][posX-1] ||
-			this.map[posY+2][posX+2] && this.map[posY+2][posX+2] != this.id || this.relief[posY+2][posX+2] ||
-			this.map[posY+2][posX-2] && this.map[posY+2][posX-2] != this.id || this.relief[posY+2][posX-2] ||
-			this.map[posY-2][posX+2] && this.map[posY-2][posX+2] != this.id || this.relief[posY-2][posX+2] ||
-			this.map[posY-2][posX-2] && this.map[posY-2][posX-2] != this.id || this.relief[posY-2][posX-2] ||
-			this.map[posY-3][posX] && this.map[posY-3][posX] != this.id || this.relief[posY-3][posX] ||
-			this.map[posY+3][posX] && this.map[posY+3][posX] != this.id || this.relief[posY+3][posX] ||
-			this.map[posY][posX-3] && this.map[posY][posX-3] != this.id || this.relief[posY][posX-3] ||
-			this.map[posY][posX+3] && this.map[posY][posX+3] != this.id || this.relief[posY][posX+3] ||
-			this.map[posY-3][posX+1] && this.map[posY-3][posX+1] != this.id || this.relief[posY-3][posX+1] ||
-			this.map[posY-3][posX-1] && this.map[posY-3][posX-1] != this.id || this.relief[posY-3][posX-1] ||
-			this.map[posY+3][posX+1] && this.map[posY+3][posX+1] != this.id || this.relief[posY+3][posX+1] ||
-			this.map[posY+3][posX-1] && this.map[posY+3][posX-1] != this.id || this.relief[posY+3][posX-1] ||
-			this.map[posY+1][posX-3] && this.map[posY+1][posX-3] != this.id || this.relief[posY+1][posX-3] ||
-			this.map[posY-1][posX-3] && this.map[posY-1][posX-3] != this.id || this.relief[posY-1][posX-3] ||
-			this.map[posY-1][posX+3] && this.map[posY-1][posX+3] != this.id || this.relief[posY-1][posX+3] ||
-			this.map[posY+1][posX+3] && this.map[posY+1][posX+3] != this.id || this.relief[posY+1][posX+3];*/
 
 		const abs = Math.abs;
 
@@ -156,7 +127,11 @@ class IslandGenerator {
 		this.id ++;
 		this.i = 0;
 		this.n = 0;
-		this.islands.push([]);
+		this.islands.push(
+			this.id == 1
+				? [this.width, this.height, this.posX, this.posY, this.map, this.relief, this.visited]
+				: [this.startX, this.startY, 1]
+		);
 		this.depth = this.rand(3, 3 + this.id/7);
 		this.amounts = this.rand(3 + this.id/7, 5 + this.id/5);
 		this.posX = this.startX;
@@ -192,7 +167,7 @@ class IslandGenerator {
 			this.posX + dirX < 2 || this.posX + dirX > this.width-3 ||
 			this.posY + dirY < 2 || this.posY + dirY > this.height-3 ||
 			this.visited[this.posY + dirY][this.posX + dirX] &&
-			attempt < 9
+			attempt < 9999
 		) {
 			dirX = Math.random();
 			if (dirX < .4) {
@@ -204,7 +179,7 @@ class IslandGenerator {
 				dirX = 0;
 			}
 			attempt ++
-			if (attempt == 8) {
+			if (attempt == 9998) {
 				if (this.checkAjacentIslands(this.posX + dirX, this.posY + dirY)) {
 					adjacent ++;
 					if (adjacent > 9) {
@@ -234,7 +209,7 @@ class IslandGenerator {
 				this.updateRelief(this.startX, this.startY, this.id == 13 ? 11 : 10, this.id);
 				if (this.id == 13) {
 					// all islands generation done
-					this.resolve();
+					this.resolve(this.islands);
 					return;
 				}
 
