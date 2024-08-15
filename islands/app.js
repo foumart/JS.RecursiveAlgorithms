@@ -7,22 +7,22 @@ window.addEventListener('load', () => {
 class App {
 	constructor() {
 		this.debug = document.getElementById("debug")
-		const debug =  this.debug != null;
-		if (debug) this.debug.highlight = this.highlight;
-		if (debug) this.debug.instant = this.debug.hasAttribute('instant');
-		if (debug) this.debug.serrial = this.debug.hasAttribute('serrial');
-		if (debug) this.debug.visible = (this.debug.style.visibility != "hidden" && this.debug.style.display != "none");
+		if (this.debug) this.debug.highlight = this.highlight;
+		if (this.debug) this.debug.instant = this.debug.hasAttribute('instant');
+		if (this.debug) this.debug.serrial = this.debug.hasAttribute('serrial');
+		if (this.debug) this.debug.feedback = this.debug.hasAttribute('feedback');
+		if (this.debug) this.debug.visible = (this.debug.style.visibility != "hidden" && this.debug.style.display != "none");
 
-		if (debug && this.debug.visible) this.debug.innerHTML = '';
+		if (this.debug && this.debug.visible) this.debug.innerHTML = '';
 
-		if (debug && this.debug.visible) document.addEventListener("DebugClick", this.onDebugClick.bind(this));
+		if (this.debug && this.debug.visible) document.addEventListener("DebugClick", this.onDebugClick.bind(this));
 
-		this.width = 24;
-		this.height = 24;
+		this.width = 30;
+		this.height = 30;
 		this.type = 1;
 
 		// initialize debug display
-		if (this.debug && this.debug.visible) this.initializeNodeList(debug);
+		if (this.debug && this.debug.visible) this.initializeNodeList();
 
 		// init map generator
 		this.islandGenerator = new IslandGenerator(this, this.width, this.height, {
@@ -43,17 +43,22 @@ class App {
 			if (index < this.height - 1) map += '\n';
 		});
 
-		console.log(map);
-		console.log("elapsed: " + (performance.now() - this.startTime) + " milliseconds");
-		console.log("map "+islands[0][0]+"x"+islands[0][1]+" generated, starting position: "+islands[0][2]+"x"+islands[0][3]);
-		console.log("map:\n"+islands[0][4].map(arr => arr.map(num => num.toString(16).toUpperCase())).join("\n"), "\n\nrelief:\n"+islands[0][5].join("\n"), "\n\nvisited:\n"+islands[0][6].join("\n"));
-		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML = "press SPACE to generate new map";
+		if (this.debug && this.debug.feedback) {
+			console.log(map);
+			console.log("elapsed: " + (performance.now() - this.startTime) + " milliseconds");
+			console.log("map "+islands[0][0]+"x"+islands[0][1]+" generated, starting position: "+islands[0][2]+"x"+islands[0][3]);
+			console.log("map:\n"+islands[0][4].map(arr => arr.map(num => num.toString(16).toUpperCase())).join("\n"), "\n\nrelief:\n"+islands[0][5].join("\n"), "\n\nvisited:\n"+islands[0][6].join("\n"));
+		}
+
+		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML =
+			`press <a href="#" onClick="(function(){this.app.generateNext()})()">[SPACE]</a> to generate new map, <a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info`;
 
 		if (!this.debug || !this.debug.visible) {
 			this.main.generateNext();
 		} else {
 			const randomizePromise = new Promise((resolve, reject) => {
-				document.addEventListener("keypress", this.advanceGeneration.bind(this, resolve));
+				this.callback = resolve;
+				document.addEventListener("keypress", this.keyPressListener);
 			});
 	
 			randomizePromise.then(() => this.main.generateNext());
@@ -62,7 +67,7 @@ class App {
 
 	generateNext() {
 		if (this.debug && this.debug.visible) {
-			console.log("generate next map");
+			if (this.debug.feedback) console.log("generate next map");
 			this.islandGenerator.destroy();
 			this.debug.innerHTML = '';
 			app = new App();
@@ -84,7 +89,7 @@ class App {
 	// colors -1: black, 0: yellow, 1: green, 2: red, 3: blue, 4: orange
 	highlight(posX, posY, type = 0) {
 		const frame = document.getElementById(`debug_${posX}x${posY}`);
-		frame.style.opacity = type != 3 ? type == 5 || type == 7 ? 0.6 : type == 9 ? 0.8 : 1 : 0.4;
+		frame.style.opacity = type != 3 ? type == 5 || type == 7 || type == 9 ? 0.8 : 1 : 0.4;
 		frame.style.backgroundColor = type == 1 || type == 9 ? "seagreen" : type == 7 || type > 9 ? "limegreen" : type == 5 ? "mediumslateblue" : "blue";
 		if (type > -1) frame.firstChild.innerHTML = String.fromCodePoint(
 			type == 0 ? 129000 : // 🟨 yellow
@@ -107,7 +112,7 @@ class App {
 		return frame;
 	}
 
-	initializeNodeList(debug) {
+	initializeNodeList() {
 		// initialize new empty map
 		this.map = [];
 		for (let y = 0; y < this.height; y++) {
@@ -128,7 +133,7 @@ class App {
 			nodeList.push(tmpArr);
 		}
 
-		if (this.debug && !this.debug.instant || debug) {
+		if (this.debug) {
 			let _height = (this.map.length % 2 ? this.map.length : this.map.length + 1);
 			let _width = (this.map[0].length % 2 ? this.map[0].length : this.map[0].length + 1);
 			for(let y = 0; y < _height; y++) {
@@ -143,7 +148,7 @@ class App {
 			}
 		}
 
-		this.debug.innerHTML += "<span>press SPACE to advance</span>";
+		this.debug.innerHTML += '<span>press <a href="#" onClick="(function(){this.app.islandGenerator.callback()})()">[SPACE]</a> to advance, <a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info</span>';
 
 		return nodeList;
 	}
