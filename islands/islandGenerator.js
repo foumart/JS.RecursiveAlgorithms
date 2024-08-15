@@ -7,7 +7,7 @@ class IslandGenerator {
 		this.startY = details.startY;
 		this.resolve = resolve;
 		this.destroyed = false;
-		this.offset = 3;
+		this.offset = 1;
 		this.startTime = performance.now();
 		this.map = [];
 
@@ -54,12 +54,14 @@ class IslandGenerator {
 
 	choseNextStartLocation() {
 		let attempt = 0;
+		//this.startY = this.rand(this.offset*2, this.height-this.offset*2);
+		//this.startX = this.rand(this.offset*2, this.width-this.offset*2);
 		while (
 			this.checkAjacentIslands(this.startX, this.startY) &&
 			attempt < 9999
 		) {
-			this.startY = this.rand(this.offset, this.height-this.offset);
-			this.startX = this.rand(this.offset, this.width-this.offset);
+			this.startY = this.rand(this.offset*3, this.height-this.offset*3);
+			this.startX = this.rand(this.offset*3, this.width-this.offset*3);
 			attempt ++;
 			if (attempt == 9998) {
 				//if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 4);
@@ -90,10 +92,10 @@ class IslandGenerator {
 	}
 
 	checkAjacentIslands(posX, posY) {
-		if (posX < this.offset || posX >= this.width - this.offset || posY < this.offset || posY >= this.height - this.offset) {
+		if (posX <= this.offset*2 || posX >= this.width - this.offset*2 || posY <= this.offset*2 || posY >= this.height - this.offset*2) {
 			return false;
 		}
-		if (posX == this.startX && posY == this.startY && !this.i && !this.n) return false;
+		//if (posX == this.startX && posY == this.startY && !this.i && !this.n) return false;
 
 		const abs = Math.abs;
 
@@ -116,7 +118,7 @@ class IslandGenerator {
 		let check = directions.some(([dy, dx]) => {
 			const y = posY + dy;
 			const x = posX + dx;
-			if (!this.relief[posY + dy][posX + dx]) this.updateRelief(posX + dx,  posY + dy, 3, 0);// turn water tile opacity to 1
+			if (!this.relief[posY + dy][posX + dx]) this.updateRelief(posX + dx,  posY + dy, 3, 0);// mark that a water tile was checked
 			return (this.map[y] && this.map[y][x] && this.map[y][x] != this.id) || (this.visited[y] && this.visited[y][x]);
 		}) || this.visited[posY][posX];
 
@@ -132,8 +134,8 @@ class IslandGenerator {
 				? [this.width, this.height, this.posX, this.posY, this.map, this.relief, this.visited]
 				: [this.startX, this.startY, 1]
 		);
-		this.depth = this.rand(3, 3 + this.id/7);
-		this.amounts = this.rand(3 + this.id/7, 5 + this.id/5);
+		this.depth = this.rand(2 + this.id/6, 3 + this.id/6);
+		this.amounts = this.rand(3 + this.id/6, 4 + this.id/6);
 		this.posX = this.startX;
 		this.posY = this.startY;
 		if (this.debug) console.log("new #"+this.id+" island will be at " + this.startX+"x"+this.startY, "depth:"+this.depth, "n:"+this.amounts)

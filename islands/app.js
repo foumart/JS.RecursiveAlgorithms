@@ -16,7 +16,7 @@ class App {
 
 		if (debug) this.debug.innerHTML = '';
 
-		if (debug) document.addEventListener("DebugClick", this.onDebugClick);
+		if (debug) document.addEventListener("DebugClick", this.onDebugClick.bind(this));
 
 		this.width = 32;
 		this.height = 32;
@@ -46,46 +46,47 @@ class App {
 
 		console.log(map);
 		console.log("elapsed: " + (performance.now() - this.startTime) + " milliseconds");
+		console.log("map "+islands[0][0]+"x"+islands[0][1]+" generated, starting position: "+islands[0][2]+"x"+islands[0][3]);
+		console.log("map:\n"+islands[0][4].map(arr => arr.map(num => num.toString(16).toUpperCase())).join("\n"), "\n\nrelief:\n"+islands[0][5].join("\n"), "\n\nvisited:\n"+islands[0][6].join("\n"));
 		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML = "press SPACE to generate new map";
 
 		if (!this.debug) {
-			this.main.generateNext(islands);
+			this.main.generateNext();
 		} else {
 			const randomizePromise = new Promise((resolve, reject) => {
 				document.addEventListener("keypress", this.advanceGeneration.bind(this, resolve));
 			});
 	
-			randomizePromise.then(() => this.main.generateNext(islands));
+			randomizePromise.then(() => this.main.generateNext());
 		}
 	}
 
-	generateNext(islands) {
+	generateNext() {
 		if (this.debug && this.debug.visible) {
 			console.log("generate next map");
 			this.islandGenerator.destroy();
 			this.debug.innerHTML = '';
 			app = new App();
 		} else {
-			console.log("map "+islands[0][0]+"x"+islands[0][1]+" generated, starting position: "+islands[0][2]+"x"+islands[0][3]);
-			console.log(islands[0][4], islands[0][5], islands[0][6]);
-			// otherwise it needs a frame to get the reference apparently :)
+			// it needs a timeout to get the reference of islandGenerator,
+			// for convenience the islands data is available in caller mapGenerated.
 			//setTimeout(()=>{console.log(this.islandGenerator.islands);}, 1);
 		}
-		
 	}
 
 	// debug click functions
 	onDebugClick(event) {
 		let x = event.detail.x;
 		let y = event.detail.y;
-		console.log(`onDebugClick (${x}x${y})`);
+		console.log(`onDebugClick (${x}x${y}) visited:${this.islandGenerator.visited[y][x]} relief:${this.islandGenerator.relief[y][x]} map:${this.islandGenerator.map[y][x]}`);
 	}
 
 	// sets a tile to a certain color
 	// colors -1: black, 0: yellow, 1: green, 2: red, 3: blue, 4: orange
 	highlight(posX, posY, type = 0) {
 		const frame = document.getElementById(`debug_${posX}x${posY}`);
-		frame.style.opacity = type != 3 ? 1 : 0.5;
+		frame.style.opacity = type != 3 ? type == 5 || type == 7 ? 0.6 : type == 9 ? 0.8 : 1 : 0.4;
+		frame.style.backgroundColor = type == 1 || type == 9 ? "seagreen" : type == 7 || type > 9 ? "limegreen" : type == 5 ? "mediumslateblue" : "blue";
 		if (type > -1) frame.firstChild.innerHTML = String.fromCodePoint(
 			type == 0 ? 129000 : // 🟨 yellow
 			type == 1 ? 129001 : // 🟩 green
@@ -137,7 +138,7 @@ class App {
 					let char = String.fromCodePoint(128998);// default water blue tiles
 					let click = `onclick='document.dispatchEvent(new CustomEvent("DebugClick",{"detail":{"x":${x},"y":${y}}}))'`;
 					let transparent = true;
-					debugHtml += `<div style="${x == _width-1 ? '' : 'float:left;'}${transparent?'opacity:0.4':''}" id="debug_${x}x${y}" ${click}><div>${char}</div><div style="position:absolute;margin-top:-19px;margin-left:6px">${x&&y&&x<this.width&&y<this.height?"&#9675;":""}</div></div>`;
+					debugHtml += `<div style="${x == _width-1 ? 'pointer-events:none;' : 'float:left;background-color:blue;'}${transparent?'opacity:0.25':''}" id="debug_${x}x${y}" ${click}><div>${char}</div><div style="position:absolute;margin-top:-19px;margin-left:6px">${x&&y&&x<this.width&&y<this.height?"&#9675;":""}</div></div>`;
 				}
 				this.debug.innerHTML += debugHtml;
 			}
