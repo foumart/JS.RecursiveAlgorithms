@@ -10,20 +10,19 @@ class App {
 		const debug =  this.debug != null;
 		if (debug) this.debug.highlight = this.highlight;
 		if (debug) this.debug.instant = this.debug.hasAttribute('instant');
-		if (debug) this.debug.visible = this.debug.hasAttribute('visible') ||
-			(!this.debug.style.visibility || this.debug.style.visibility == "visible") ||
-			(!this.debug.style.display || this.debug.style.display == "block");
+		if (debug) this.debug.serrial = this.debug.hasAttribute('serrial');
+		if (debug) this.debug.visible = (this.debug.style.visibility != "hidden" && this.debug.style.display != "none");
 
-		if (debug) this.debug.innerHTML = '';
+		if (debug && this.debug.visible) this.debug.innerHTML = '';
 
-		if (debug) document.addEventListener("DebugClick", this.onDebugClick.bind(this));
+		if (debug && this.debug.visible) document.addEventListener("DebugClick", this.onDebugClick.bind(this));
 
-		this.width = 32;
-		this.height = 32;
+		this.width = 24;
+		this.height = 24;
 		this.type = 1;
 
 		// initialize debug display
-		if (this.debug) this.initializeNodeList(debug);
+		if (this.debug && this.debug.visible) this.initializeNodeList(debug);
 
 		// init map generator
 		this.islandGenerator = new IslandGenerator(this, this.width, this.height, {
@@ -50,7 +49,7 @@ class App {
 		console.log("map:\n"+islands[0][4].map(arr => arr.map(num => num.toString(16).toUpperCase())).join("\n"), "\n\nrelief:\n"+islands[0][5].join("\n"), "\n\nvisited:\n"+islands[0][6].join("\n"));
 		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML = "press SPACE to generate new map";
 
-		if (!this.debug) {
+		if (!this.debug || !this.debug.visible) {
 			this.main.generateNext();
 		} else {
 			const randomizePromise = new Promise((resolve, reject) => {

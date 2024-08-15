@@ -49,7 +49,7 @@ class IslandGenerator {
 		this.visited[this.posY][this.posX] = 1;
 		this.map[this.posY][this.posX] = 1;
 		this.islands.push([]);
-		this.advanceRandomization();
+		this.advanceWithSpace(this.randomizedExpand.bind(this));
 	}
 
 	choseNextStartLocation() {
@@ -134,27 +134,29 @@ class IslandGenerator {
 				? [this.width, this.height, this.posX, this.posY, this.map, this.relief, this.visited]
 				: [this.startX, this.startY, 1]
 		);
-		this.depth = this.rand(2 + this.id/6, 3 + this.id/6);
-		this.amounts = this.rand(3 + this.id/6, 4 + this.id/6);
+		this.depth = this.rand(2 + this.id/9, 3 + this.id/9);
+		this.amounts = this.rand(2 + this.id/9, 3 + this.id/9);
 		this.posX = this.startX;
 		this.posY = this.startY;
+
 		if (this.debug) console.log("new #"+this.id+" island will be at " + this.startX+"x"+this.startY, "depth:"+this.depth, "n:"+this.amounts)
 	}
 
-	advanceRandomization() {
+	advanceWithSpace(callback, passInteraction) {
 		if (this.destroyed) return;
 
-		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY);// cursor highlight yellow
+		// cursor highlight yellow
+		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, this.n>0||this.i>0 ? 0 : 1);
 
-		if (!this.debug || this.debug.instant) {
-			this.randomizedExpand();
+		if (!this.debug || this.debug.instant || !this.debug.visible || passInteraction && this.debug.serrial) {
+			callback();
 		} else {
 			const randomizePromise = new Promise((resolve, reject) => {
 				document.addEventListener("keypress", this.advanceGeneration.bind(this, resolve));
 			});
 	
 			randomizePromise.then(() => {
-				this.randomizedExpand();
+				callback();
 			});
 		}
 	}
@@ -212,20 +214,25 @@ class IslandGenerator {
 				if (this.id == 13) {
 					// all islands generation done
 					this.resolve(this.islands);
-					return;
+				} else {
+					this.advanceWithSpace(
+						()=> {
+							this.choseNextStartLocation();
+							this.advanceWithSpace(this.randomizedExpand.bind(this));
+						}, true
+					);
 				}
-
-				this.choseNextStartLocation();
+				return;
 			}
 			
 			this.posX = this.startX;
 			this.posY = this.startY;
 		} else {
-			// increment and update the green relief data on each island tile we visit (land)
+			// increment and update the green relief data on each island tile we visit (adding land tiles)
 			this.updateRelief(this.posX, this.posY, 1);
 		}
 
-		this.advanceRandomization();
+		this.advanceWithSpace(this.randomizedExpand.bind(this), true);
 	}
 
 	advanceGeneration(callback) {
