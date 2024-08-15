@@ -17,8 +17,8 @@ class App {
 
 		if (this.debug && this.debug.visible) document.addEventListener("DebugClick", this.onDebugClick.bind(this));
 
-		this.width = 30;
-		this.height = 30;
+		this.width = 32;
+		this.height = 32;
 		this.type = 1;
 
 		// initialize debug display
@@ -43,12 +43,12 @@ class App {
 			if (index < this.height - 1) map += '\n';
 		});
 
-		if (this.debug && this.debug.feedback) {
+		//if (this.debug && this.debug.feedback) {
 			console.log(map);
 			console.log("elapsed: " + (performance.now() - this.startTime) + " milliseconds");
 			console.log("map "+islands[0][0]+"x"+islands[0][1]+" generated, starting position: "+islands[0][2]+"x"+islands[0][3]);
 			console.log("map:\n"+islands[0][4].map(arr => arr.map(num => num.toString(16).toUpperCase())).join("\n"), "\n\nrelief:\n"+islands[0][5].join("\n"), "\n\nvisited:\n"+islands[0][6].join("\n"));
-		}
+		//}
 
 		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML =
 			`press <a href="#" onClick="(function(){this.app.generateNext()})()">[SPACE]</a> to generate new map, <a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info`;
@@ -89,8 +89,8 @@ class App {
 	// colors -1: black, 0: yellow, 1: green, 2: red, 3: blue, 4: orange
 	highlight(posX, posY, type = 0) {
 		const frame = document.getElementById(`debug_${posX}x${posY}`);
-		frame.style.opacity = type != 3 ? type == 5 || type == 7 || type == 9 ? 0.8 : 1 : 0.4;
-		frame.style.backgroundColor = type == 1 || type == 9 ? "seagreen" : type == 7 || type > 9 ? "limegreen" : type == 5 ? "mediumslateblue" : "blue";
+		frame.style.opacity = type != 3 ? type == 5 || type == 7 || type == 9 ? type == 5 ? 0.5 : 0.7 : 1 : 0.4;
+		frame.style.backgroundColor = type == 1 || !type ? "seagreen" : type > 4 ? "mediumslateblue" : "blue";
 		if (type > -1) frame.firstChild.innerHTML = String.fromCodePoint(
 			type == 0 ? 129000 : // 🟨 yellow
 			type == 1 ? 129001 : // 🟩 green

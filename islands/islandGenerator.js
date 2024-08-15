@@ -52,18 +52,18 @@ class IslandGenerator {
 	choseNextStartLocation() {
 		let attempt = 0;
 		while (
-			this.checkAjacentIslands(this.startX, this.startY, 3 - (attempt/4500|0)) &&
-			attempt < 9999
+			this.checkAjacentIslands(this.startX, this.startY, 3 - (attempt/33|0)) &&
+			attempt < 99
 		) {
 			this.startY = this.rand(this.offset*2, this.height-this.offset*2);
 			this.startX = this.rand(this.offset*2, this.width-this.offset*2);
 			attempt ++;
-			if (attempt == 9999) {
+			if (attempt == 99) {
 				console.warn("start location "+this.startX+"x"+this.startY);
 				//if (this.debug.visible) this.debug.highlight(this.posX, this.posY, 4);
 			}
 		};
-		if (this.debug && attempt==9999) console.warn("choseNextStartLocation", attempt);
+		if (this.debug && attempt==99) console.warn("choseNextStartLocation", attempt);
 
 		// add riffs and relief data
 		this.updateRelief(this.startX+2, this.startY+2, 5);
@@ -162,7 +162,7 @@ class IslandGenerator {
 		this.callback = callback;
 
 		// cursor highlight in yellow when generating an isle or orange when chosing new isles
-		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, this.n>0 || this.i>0 ? 10 : 0);
+		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, this.n>0||this.i>0 ? this.n==this.amounts-1||this.i==this.depth-1 ? 10 : 7 : 0);
 
 		if (!this.debug || this.debug.instant || !this.debug.visible || passInteraction && this.debug.serrial) {
 			callback();
@@ -205,8 +205,8 @@ class IslandGenerator {
 				this.posX + dirX < 3 || this.posX + dirX > this.width-3 ||
 				this.posY + dirY < 3 || this.posY + dirY > this.height-3 ||
 				this.visited[this.posY + dirY][this.posX + dirX] ||
-				this.checkAjacentIslands(this.posX + dirX, this.posY + dirY, 2 - (attempt/4500|0))
-			) && attempt < 9999
+				this.checkAjacentIslands(this.posX + dirX, this.posY + dirY, 3 - (attempt/66|0))// adjacent island adjustment
+			) && attempt < 99
 		) {
 			dirX = Math.random();
 			if (dirX < .4) {
@@ -218,14 +218,14 @@ class IslandGenerator {
 				dirX = 0;
 			}
 			attempt ++;
-			if (attempt == 9999) {
+			if (attempt == 99) {
 				this.i = this.depth;
 				this.n = this.amounts;
 				break;
 			}
 		};
-		if (this.debug && this.debug.feedback) console[attempt<9999?"log":"warn"]("randomizedExpand", attempt);
-		//if (attempt < 9999) {
+		if (this.debug && this.debug.feedback) console[attempt<99?"log":"warn"]("randomizedExpand", attempt);
+		//if (attempt < 99) {
 			this.posX += dirX;
 			this.posY += dirY;
 			//console.log("randomizedExpand", this.posX, this.posY, "x:"+dirX, "y:"+dirY, this.depth+"("+this.i+")", this.amounts+"("+this.n+")");
