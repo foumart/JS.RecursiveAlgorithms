@@ -3,11 +3,11 @@ class IslandGenerator {
 		this.main = _this;
 		this.type = details.type;
 		this.debug = details.debug;
-		this.startX = details.startX || 0;
-		this.startY = details.startY || 0;
+		this.offset = details.offset;
+		this.startX = details.startX;
+		this.startY = details.startY;
 		this.resolve = resolve;
 		this.destroyed = false;
-		this.offset = 3;
 		this.startTime = performance.now();
 		this.map = [];
 
@@ -22,6 +22,9 @@ class IslandGenerator {
 	generateIslands(width, height) {
 		this.width = width;
 		this.height = height;
+		if (!this.startX) this.startX = this.width/2|0;
+		if (!this.startY) this.startY = this.height/2|0;
+		if (!this.offset) this.offset = this.height/10|0;
 		
 		this.map = this.initArray();
 		
@@ -29,34 +32,24 @@ class IslandGenerator {
 		this.posY = this.startY;
 
 		this.relief = this.initArray();
-
 		this.visited = this.initArray();
-		this.visited.forEach((row, indexY) => {
-			row.forEach((cell, indexX) => {
-				this.visited[indexY][indexX] = indexX < 1 || indexY < 1 ||
-					indexY >= this.visited.length - 1 || indexX >= this.visited[indexY].length - 1 ? 1 : 0;
-			});
-		});
-
 		this.islands = [];
 
 		this.id = 0;
 		this.choseNextStartLocation();
-		this.updateRelief(this.posX, this.posY);
-		this.visited[this.posY][this.posX] = 1;
-		this.map[this.posY][this.posX] = 1;
 		this.islands.push([]);
 		this.advanceWithSpace(this.randomizedExpand.bind(this));
 	}
 
 	choseNextStartLocation() {
+		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, 7);// post fix
 		let attempt = 0;
 		while (
 			this.checkAjacentIslands(this.startX, this.startY, 3 - (attempt/33|0)) &&
 			attempt < 99
 		) {
-			this.startY = this.rand(this.offset*2, this.height-this.offset*2);
-			this.startX = this.rand(this.offset*2, this.width-this.offset*2);
+			this.startY = this.rand(this.offset, this.height-this.offset);
+			this.startX = this.rand(this.offset, this.width-this.offset);
 			attempt ++;
 			if (attempt == 99) {
 				console.warn("start location "+this.startX+"x"+this.startY);
@@ -79,7 +72,7 @@ class IslandGenerator {
 	}
 
 	updateRelief(posX, posY, type = 1, inner = -1) {
-		// map level topology
+		// map level topology - altitude on land, type of riff in water
 		if (posX < 1 || posX > this.width-1 || posY < 1 || posY > this.height-1) return;
 		if (inner) this.relief[posY][posX] ++;
 		if (this.debug && this.debug.visible) {
@@ -94,10 +87,9 @@ class IslandGenerator {
 	}
 
 	checkAjacentIslands(posX, posY, num = 3) {
-		if (posX < this.offset || posX >= this.width - this.offset || posY < this.offset || posY >= this.height - this.offset) {
+		if (posX < this.offset/3 || posX > this.width - this.offset/3 || posY < this.offset/3 || posY > this.height - this.offset/3) {
 			return true;
 		}
-		//if (posX == this.startX && posY == this.startY && !this.i && !this.n) return false;
 
 		const abs = Math.abs;
 
@@ -154,6 +146,9 @@ class IslandGenerator {
 		this.posX = this.startX;
 		this.posY = this.startY;
 
+		this.updateRelief(this.startX, this.startY);
+		this.visited[this.startY][this.startX] = 1;
+		this.map[this.startY][this.startX] = this.id;
 		if (this.debug && this.debug.feedback) console.log("new #"+this.id+" island will be at " + this.startX+"x"+this.startY, "depth:"+this.depth, "n:"+this.amounts)
 	}
 
@@ -161,8 +156,8 @@ class IslandGenerator {
 		if (this.destroyed) return;
 		this.callback = callback;
 
-		// cursor highlight in yellow when generating an isle or orange when chosing new isles
-		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, this.n>0||this.i>0 ? this.n==this.amounts-1||this.i==this.depth-1 ? 10 : 7 : 0);
+		// cursor highlight in yellow circle when generating an isle or orange square when chosing new isles
+		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, this.n>0||this.i>0 ? 10 : this.id==1 ? 1 : 4);
 
 		if (!this.debug || this.debug.instant || !this.debug.visible || passInteraction && this.debug.serrial) {
 			callback();
@@ -239,11 +234,12 @@ class IslandGenerator {
 		if (this.i >= this.depth) {
 			this.n ++;
 			this.i = 0;
-			// add violet circle riffs at the end of each n itteration and circle green at the last tile of the island (key)
-			this.updateRelief(this.posX, this.posY, this.n >= this.amounts ? 7 : 9);
+			// add violet circle riffs at the end of each n itteration,
+			// circle green at the last tile of an island (key) will be added later when generating new island.
+			this.updateRelief(this.posX, this.posY, 9);
 			if (this.n >= this.amounts) {
 				// hilight isle id with squared yellow shape (town)
-				this.updateRelief(this.startX, this.startY, 0, this.id);
+				this.updateRelief(this.startX, this.startY, this.id == 13 ? 4 : 0, this.id);
 				if (this.id == 13) {
 					// all islands generation done
 					this.resolve(this.islands);

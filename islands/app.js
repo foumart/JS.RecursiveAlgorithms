@@ -17,8 +17,8 @@ class App {
 
 		if (this.debug && this.debug.visible) document.addEventListener("DebugClick", this.onDebugClick.bind(this));
 
-		this.width = 32;
-		this.height = 32;
+		this.width = 40;
+		this.height = 40;
 		this.type = 1;
 
 		// initialize debug display
@@ -27,6 +27,7 @@ class App {
 		// init map generator
 		this.islandGenerator = new IslandGenerator(this, this.width, this.height, {
 			type: this.type,
+			offset: 10,
 			debug: this.debug,
 			startX: this.width/2|0,
 			startY: this.height/2|0
@@ -89,8 +90,8 @@ class App {
 	// colors -1: black, 0: yellow, 1: green, 2: red, 3: blue, 4: orange
 	highlight(posX, posY, type = 0) {
 		const frame = document.getElementById(`debug_${posX}x${posY}`);
-		frame.style.opacity = type != 3 ? type == 5 || type == 7 || type == 9 ? type == 5 ? 0.5 : 0.7 : 1 : 0.4;
-		frame.style.backgroundColor = type == 1 || !type ? "seagreen" : type > 4 ? "mediumslateblue" : "blue";
+		frame.style.opacity = type != 3 ? type == 5 || type == 7 || type == 9 ? type/10 : 1 : 0.4;
+		frame.style.backgroundColor = type == 1 || !type || type == 9 || type == 7 ? "seagreen" : type > 4 ? "mediumslateblue" : "blue";
 		if (type > -1) frame.firstChild.innerHTML = String.fromCodePoint(
 			type == 0 ? 129000 : // 🟨 yellow
 			type == 1 ? 129001 : // 🟩 green
