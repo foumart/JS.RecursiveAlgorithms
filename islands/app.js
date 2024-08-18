@@ -51,9 +51,16 @@ class App {
 			console.log("map:\n"+islands[0][4].map(arr => arr.map(num => num.toString(16).toUpperCase())).join("\n"), "\n\nrelief:\n"+islands[0][5].join("\n"), "\n\nvisited:\n"+islands[0][6].join("\n"));
 		//}
 
-		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML =
-			`press <a href="#" onClick="(function(){this.app.generateNext()})()">[SPACE]</a> to generate new map, <a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info`;
-
+		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML = `<div style="line-height:28px">Legend: `
+			+ `<span style="padding:3px 0;background-color:seagreen">${String.fromCodePoint(129000)}</span> (town 1-C) &nbsp; `
+			+ `<span style="padding:3px 0;background-color:orange">${String.fromCodePoint(128999)}</span> (cursed isle D) &nbsp; `
+			+ `<span style="padding:3px 0;background-color:seagreen">${String.fromCodePoint(129001)}</span> (land) &nbsp; `
+			+ `<span style="padding:3px 0;background-color:seagreen">${String.fromCodePoint(128994)}</span> (port) &nbsp; `
+			+ `<span style="padding:3px 0;background-color:mediumslateblue">${String.fromCodePoint(129002)}</span> (quay) &nbsp; `
+			+ `<span style="padding:3px 0;background-color:mediumslateblue">${String.fromCodePoint(128995)}</span> (pier)`
+			+ `<br>Press <a href="#" onClick="(function(){this.app.generateNext()})()">[SPACE]</a> to generate new map, `
+			+ `<a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info</div>`;
+			
 		if (!this.debug || !this.debug.visible) {
 			this.main.generateNext();
 		} else {
@@ -88,10 +95,10 @@ class App {
 
 	// sets a tile to a certain color
 	// colors -1: black, 0: yellow, 1: green, 2: red, 3: blue, 4: orange
-	highlight(posX, posY, type = 0) {
+	highlight(posX, posY, type = 0, opacity) {
 		const frame = document.getElementById(`debug_${posX}x${posY}`);
-		frame.style.opacity = type != 3 ? type == 5 || type == 7 || type == 9 ? type/10 : 1 : 0.4;
-		frame.style.backgroundColor = type == 1 || !type || type == 9 || type == 7 ? "seagreen" : type > 4 ? "mediumslateblue" : "blue";
+		frame.style.opacity = opacity!= null ? opacity : type != 3 ? type == 5 || type == 9 ? type/10 : 1 : 0.4;
+		frame.style.backgroundColor = type == 1 || !type || type == 7 ? "seagreen" : type == 4 ? "orange" : type > 4 ? "mediumslateblue" : "blue";
 		if (type > -1) frame.firstChild.innerHTML = String.fromCodePoint(
 			type == 0 ? 129000 : // 🟨 yellow
 			type == 1 ? 129001 : // 🟩 green

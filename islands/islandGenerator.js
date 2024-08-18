@@ -77,7 +77,10 @@ class IslandGenerator {
 		if (inner) this.relief[posY][posX] ++;
 		if (this.debug && this.debug.visible) {
 			if (this.debug.feedback) {
-				type = this.debug.highlight(posX, posY, type);
+				type = this.debug.highlight(
+					posX, posY, type,
+					type == 5 && this.relief[posY][posX] > 1 && this.visited[posY][posX] ? 1 : null
+				);
 				type.children[1].innerHTML = inner > 0 ? inner.toString(16).toUpperCase() : this.relief[posY][posX];
 			} else {
 				type = this.debug.highlight(posX, posY, type == 5 ? 3 : type);
@@ -269,8 +272,8 @@ class IslandGenerator {
 		callback();
 	}
 
-	initArray(value = 0) {
-		return new Array(this.height).fill().map(() => new Array(this.width).fill(value));
+	initArray(_value = 0, _width, _height) {
+		return new Array(_height || _width || this.height).fill().map(() => new Array(_width || this.width).fill(_value));
 	}
 
 	rand(min, max) {
