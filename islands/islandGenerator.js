@@ -19,15 +19,54 @@ class IslandGenerator {
 		this.destroyed = true;
 	}
 
+	regenerate(_startX, _startY, _endX, _endY) {
+		this.startTime = performance.now();
+		let islesToNotRegen = [];
+		// get the islands that fall in the protected area
+		for (let y = _startY; y < _endY; y++) {
+			for (let x = _startX; x < _endX; x++) {
+				if (islesToNotRegen.indexOf(this.map[y][x]) == -1 && this.map[y][x]) islesToNotRegen.push(this.map[y][x]);
+			}
+		}
+		// clear the rest of the islands in the array
+		for (let y = 1; y < 14; y++) {
+			if (islesToNotRegen.indexOf(y) == -1) {
+				this.islands[y] = [];
+			}
+		}
+		console.log("regenerate area:", _startX+"x"+_startY+"-"+_endX+"x"+_endY, "protected islands:"+islesToNotRegen);
+		// clear the map outside the protected area
+		for (let y = 0; y < this.height; y++) {
+			for (let x = 0; x < this.width; x++) {
+				if (islesToNotRegen.indexOf(this.map[y][x]) == -1) {
+					this.map[y][x] = 0;
+					this.relief[y][x] = 0;
+					this.visited[y][x] = 0;
+					this.updateRelief(x,  y, 3, 0);
+				}
+			}
+		}
+
+		this.id = 1;// set the id to the next isle that have to be regenerated (skipping any protected ones in order)
+		while (islesToNotRegen.indexOf(this.id) > -1) {
+			if (this.debug && this.debug.feedback) console.log("skip #" + this.id, this.islands[this.id].length);
+			this.id ++;
+		}
+		this.id --;
+
+		document.dispatchEvent(new CustomEvent("Reset"));
+		this.generateNextIsland(true);
+	}
+
 	generateIslands(width, height) {
 		this.width = width;
 		this.height = height;
 		if (!this.startX) this.startX = this.width/2|0;
 		if (!this.startY) this.startY = this.height/2|0;
 		if (!this.offset) this.offset = this.height/10|0;
-		
+
 		this.map = this.initArray();
-		
+
 		this.posX = this.startX;
 		this.posY = this.startY;
 
@@ -36,12 +75,27 @@ class IslandGenerator {
 		this.islands = [];
 
 		this.id = 0;
-		this.choseNextStartLocation();
-		this.islands.push([]);
-		this.advanceWithSpace(this.randomizedExpand.bind(this));
+		for (let y = 0; y < 14; y++) {
+			this.islands.push([]);
+		}
+
+		this.generateNextIsland();
 	}
 
-	choseNextStartLocation() {
+	generateNextIsland(regen) {
+		this.advanceWithSpace(
+			()=> {
+				this.choseNextStartLocation(regen);
+				this.advanceWithSpace(this.randomizedExpand.bind(this));
+			}, true
+		);
+	}
+
+	choseNextStartLocation(regen) {
+		if (this.id && !regen) {
+			this.islands[this.id].unshift(this.startX, this.startY);
+		}
+		
 		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, 7);// post fix
 		let attempt = 0;
 		while (
@@ -74,7 +128,10 @@ class IslandGenerator {
 	updateRelief(posX, posY, type = 1, inner = -1) {
 		// map level topology - altitude on land, type of riff in water
 		if (posX < 1 || posX > this.width-1 || posY < 1 || posY > this.height-1) return;
-		if (inner) this.relief[posY][posX] ++;
+		if (inner) {
+			this.relief[posY][posX] ++;
+			if (type == 5) this.map[posY][posX] = this.id + 1;
+		}
 		if (this.debug && this.debug.visible) {
 			if (this.debug.feedback) {
 				type = this.debug.highlight(
@@ -127,23 +184,27 @@ class IslandGenerator {
 			return (this.relief[y][x] && num == 3 || this.map[y][x] && this.map[y][x] != this.id);
 
 		}) || this.visited[posY][posX] ||
-			this.map[posY+1][posX] && this.map[posY+1][posX] != this.id ||
-			this.map[posY-1][posX] && this.map[posY-1][posX] != this.id ||
-			this.map[posY][posX+1] && this.map[posY][posX+1] != this.id ||
-			this.map[posY][posX-1] && this.map[posY][posX-1] != this.id;
+			this.visited[posY+1][posX] && this.map[posY+1][posX] != this.id ||
+			this.visited[posY-1][posX] && this.map[posY-1][posX] != this.id ||
+			this.visited[posY][posX+1] && this.map[posY][posX+1] != this.id ||
+			this.visited[posY][posX-1] && this.map[posY][posX-1] != this.id;
 
 		return check;
 	}
 
 	randomizeNextIsland() {
+		if (!this.id) {
+			this.islands[0] = [this.width, this.height, this.posX, this.posY, this.map, this.relief, this.visited];
+		}
+
 		this.id ++;
+		while (this.islands[this.id].length && this.id < 14) {
+			if (this.debug && this.debug.feedback) console.log("skip #" + this.id, this.islands[this.id].length);
+			this.id ++;
+		}
+
 		this.i = 0;
 		this.n = 0;
-		this.islands.push(
-			this.id == 1
-				? [this.width, this.height, this.posX, this.posY, this.map, this.relief, this.visited]
-				: [this.startX, this.startY, 1]
-		);
 		this.depth = this.rand(2 + this.id/9, 3 + this.id/9);
 		this.amounts = this.rand(3 + this.id/9, 3 + this.id/6);
 		this.posX = this.startX;
@@ -152,6 +213,7 @@ class IslandGenerator {
 		this.updateRelief(this.startX, this.startY);
 		this.visited[this.startY][this.startX] = 1;
 		this.map[this.startY][this.startX] = this.id;
+
 		if (this.debug && this.debug.feedback) console.log("new #"+this.id+" island will be at " + this.startX+"x"+this.startY, "depth:"+this.depth, "n:"+this.amounts)
 	}
 
@@ -222,7 +284,7 @@ class IslandGenerator {
 				break;
 			}
 		};
-		if (this.debug && this.debug.feedback) console[attempt<99?"log":"warn"]("randomizedExpand", attempt);
+		//if (this.debug && this.debug.feedback) console[attempt<99?"log":"warn"]("randomizedExpand", attempt);
 		//if (attempt < 99) {
 			this.posX += dirX;
 			this.posY += dirY;
@@ -242,17 +304,13 @@ class IslandGenerator {
 			this.updateRelief(this.posX, this.posY, 9);
 			if (this.n >= this.amounts) {
 				// hilight isle id with squared yellow shape (town)
-				this.updateRelief(this.startX, this.startY, this.id == 13 ? 4 : 0, this.id);
-				if (this.id == 13) {
+				this.updateRelief(this.startX, this.startY, this.id >= 13 ? 4 : 0, this.id);
+				if (this.id >= 13) {
 					// all islands generation done
+					this.islands[this.id].unshift(this.startX, this.startY);// add the starting location
 					this.resolve(this.islands);
 				} else {
-					this.advanceWithSpace(
-						()=> {
-							this.choseNextStartLocation();
-							this.advanceWithSpace(this.randomizedExpand.bind(this));
-						}, true
-					);
+					this.generateNextIsland();
 				}
 				return;
 			}

@@ -16,10 +16,18 @@ class App {
 		if (this.debug && this.debug.visible) this.debug.innerHTML = '';
 
 		if (this.debug && this.debug.visible) document.addEventListener("DebugClick", this.onDebugClick.bind(this));
+		if (this.debug && this.debug.visible) document.addEventListener("MouseDown", this.onMouseDown.bind(this));
+		if (this.debug && this.debug.visible) document.addEventListener("MouseMove", this.onMouseMove.bind(this));
+		if (this.debug && this.debug.visible) document.addEventListener("MouseUp", this.onMouseUp.bind(this));
+		if (this.debug && this.debug.visible) document.addEventListener("Reset", this.resetSelection.bind(this));
 
 		this.width = 40;
 		this.height = 40;
 		this.type = 1;
+
+		this.startDragX = -1;
+		this.startDragY = -1;
+		this.dragging = false;
 
 		// initialize debug display
 		if (this.debug && this.debug.visible) this.initializeNodeList();
@@ -36,20 +44,23 @@ class App {
 
     mapGenerated(islands) {
 		/* islandGenerator scope */
-		let map = `${this.startY} ${this.startX}\n${this.posY} ${this.posX}\n${this.height} ${this.width}\n`;
+
+		// provide hackerrank-like string data
+		/*let map = `${this.startY} ${this.startX}\n${this.posY} ${this.posX}\n${this.height} ${this.width}\n`;
 		this.map.forEach((mapRow, index) => {
 			mapRow.forEach(mapCell => {
 				map += mapCell.toString(16) + '';
 			});
 			if (index < this.height - 1) map += '\n';
 		});
+		console.log(map);*/
 
-		//if (this.debug && this.debug.feedback) {
-			console.log(map);
+		if (this.debug && this.debug.feedback) {
 			console.log("elapsed: " + (performance.now() - this.startTime) + " milliseconds");
-			console.log("map "+islands[0][0]+"x"+islands[0][1]+" generated, starting position: "+islands[0][2]+"x"+islands[0][3]);
+			console.log("map size:"+islands[0][0]+"x"+islands[0][1]+", starting position: "+islands[0][2]+"x"+islands[0][3]);
 			console.log("map:\n"+islands[0][4].map(arr => arr.map(num => num.toString(16).toUpperCase())).join("\n"), "\n\nrelief:\n"+islands[0][5].join("\n"), "\n\nvisited:\n"+islands[0][6].join("\n"));
-		//}
+			console.log("islands:",islands);
+		}
 
 		if (this.debug && this.debug.visible) this.debug.lastChild.innerHTML = `<div style="line-height:28px">Legend: `
 			+ `<span style="padding:3px 0;background-color:seagreen">${String.fromCodePoint(129000)}</span> (town 1-C) &nbsp; `
@@ -59,7 +70,8 @@ class App {
 			+ `<span style="padding:3px 0;background-color:mediumslateblue">${String.fromCodePoint(129002)}</span> (quay) &nbsp; `
 			+ `<span style="padding:3px 0;background-color:mediumslateblue">${String.fromCodePoint(128995)}</span> (pier)`
 			+ `<br>Press <a href="#" onClick="(function(){this.app.generateNext()})()">[SPACE]</a> to generate new map, `
-			+ `<a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info</div>`;
+			+ `<a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info. `
+			+ `Select an <a href="#" onClick="(function(){this.app.islandGenerator.regenerate(16, 14, 24, 26);})()">[area]</a> above to preserve isles during next generation.</div>`;
 			
 		if (!this.debug || !this.debug.visible) {
 			this.main.generateNext();
@@ -83,6 +95,51 @@ class App {
 			// it needs a timeout to get the reference of islandGenerator,
 			// for convenience the islands data is available in caller mapGenerated.
 			//setTimeout(()=>{console.log(this.islandGenerator.islands);}, 1);
+		}
+	}
+
+	resetSelection() {
+		let debugTile;
+		for (let y = 0; y < this.height; y++) {
+			for (let x = 0; x < this.width; x++) {
+				debugTile = document.getElementById(`debug_${x}x${y}`);
+				debugTile.style.filter = "none";
+				debugTile.enabled = false;
+			}
+		}
+	}
+
+	onMouseDown(event) {
+		this.resetSelection();
+		this.dragging = true;
+		this.startDragX = event.detail.x;
+		this.startDragY = event.detail.y;
+	}
+	
+	onMouseMove(event) {
+		if (this.dragging) {
+			this.resetSelection();
+			let debugTile;
+			let X = Number(event.detail.x);
+			let Y = Number(event.detail.y);
+			for (let y = this.startDragY; y <= Y; y++) {
+				for (let x = this.startDragX; x <= X; x++) {//let x = this.startDragX < X ? this.startDragX : X; x < this.startDragX < X ? X : this.startDragX; x++
+					debugTile = document.getElementById(`debug_${x}x${y}`);
+					debugTile.style.filter = "brightness(2)";
+					debugTile.enabled = true;
+				}
+			}
+		}
+	}
+	
+	onMouseUp(event) {
+		if (this.dragging) {
+			this.dragging = false;
+			let X = Number(event.detail.x);
+			let Y = Number(event.detail.y);
+			if (this.startDragX != X && this.startDragY != Y) {
+				this.islandGenerator.regenerate(this.startDragX, this.startDragY, X, Y);
+			}
 		}
 	}
 
@@ -149,14 +206,17 @@ class App {
 				for(let x = 0; x < _width; x++) {
 					let char = String.fromCodePoint(128998);// default water blue tiles
 					let click = `onclick='document.dispatchEvent(new CustomEvent("DebugClick",{"detail":{"x":${x},"y":${y}}}))'`;
+					let mousedown = `onmousedown='document.dispatchEvent(new CustomEvent("MouseDown",{"detail":{"x":${x},"y":${y}}}))'`;
+					let mousemove = `onmousemove='document.dispatchEvent(new CustomEvent("MouseMove",{"detail":{"x":${x},"y":${y}}}))'`;
+					let mouseup = `onmouseup='document.dispatchEvent(new CustomEvent("MouseUp",{"detail":{"x":${x},"y":${y}}}))'`;
 					let transparent = true;
-					debugHtml += `<div style="${x == _width-1 ? 'pointer-events:none;' : 'float:left;background-color:blue;'}${transparent?'opacity:0.25':''}" id="debug_${x}x${y}" ${click}><div>${char}</div><div style="position:absolute;margin-top:-19px;margin-left:6px">${x&&y&&x<this.width&&y<this.height?"&#9675;":""}</div></div>`;
+					debugHtml += `<div style="${x == _width-1 ? 'pointer-events:none;' : 'float:left;background-color:blue;user-select:none;'}${transparent?'opacity:0.25':''}" id="debug_${x}x${y}" ${click} ${mousedown} ${mousemove} ${mouseup}><div>${char}</div><div style="position:absolute;margin-top:-19px;margin-left:6px">${x&&y&&x<this.width&&y<this.height?"&#9675;":""}</div></div>`;
 				}
 				this.debug.innerHTML += debugHtml;
 			}
 		}
 
-		this.debug.innerHTML += '<span>press <a href="#" onClick="(function(){this.app.islandGenerator.callback()})()">[SPACE]</a> to advance, <a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info</span>';
+		this.debug.innerHTML += '<span>press <a href="#" onClick="(function(){this.app.islandGenerator.callback()})()">[SPACE]</a> to advance, <a href="#" onClick="(function(){this.app.islandGenerator.debugInfo()})()">[?]</a> for info.</span>';
 
 		return nodeList;
 	}
