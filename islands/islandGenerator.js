@@ -198,9 +198,15 @@ class IslandGenerator {
 		}
 
 		this.id ++;
-		while (this.islands[this.id].length && this.id < 14) {
+		while (this.islands[this.id].length) {
 			if (this.debug && this.debug.feedback) console.log("skip #" + this.id, this.islands[this.id].length);
 			this.id ++;
+			if (this.id >= 14) {
+				// if the last 13th island does not have to be regenerated, we have to resolve here
+				if (this.debug && this.debug.feedback) console.log("Resolve after skip")
+				this.resolve(this.islands);
+				return;
+			}
 		}
 
 		this.i = 0;
@@ -256,6 +262,11 @@ class IslandGenerator {
 	}
 
 	randomizedExpand() {
+		if (this.id >= 14) {
+			if (this.debug && this.debug.feedback) console.log("Ensure resolve after skip");
+			return;
+		}
+
 		if (this.debug && this.debug.visible) this.debug.highlight(this.posX, this.posY, 1);// previous highlight in green
 		let dirX = 0;
 		let dirY = 0;
