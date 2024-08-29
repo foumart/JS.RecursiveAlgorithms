@@ -23,8 +23,8 @@ class IslandGenerator {
 		this.startTime = performance.now();
 		let islesToNotRegen = [];
 		// get the islands that fall in the protected area
-		for (let y = _startY; y < _endY; y++) {
-			for (let x = _startX; x < _endX; x++) {
+		for (let y = _startY; y < (_endY < this.height ? _endY : this.height); y++) {
+			for (let x = _startX; x < (_endX < this.width ? _endX : this.width); x++) {
 				if (islesToNotRegen.indexOf(this.map[y][x]) == -1 && this.map[y][x]) islesToNotRegen.push(this.map[y][x]);
 			}
 		}
